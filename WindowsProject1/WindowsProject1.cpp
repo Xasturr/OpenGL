@@ -5,7 +5,11 @@
 #include "WindowsProject1.h"
 #include "Model.h"
 
+#include <iostream>
+
 #define MAX_LOADSTRING 100
+#define WINDOW_WIDTH 900
+#define WINDOW_HEIGHT 600
 
 // Глобальные переменные:
 HINSTANCE hInst;                                // текущий экземпляр
@@ -43,9 +47,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     }
 
     HACCEL hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_WINDOWSPROJECT1));
-
+    glEnable(GL_DEPTH_TEST);
     MSG msg;
-
     Model* model = new Model({ "Textures/container.jpg", "Textures/awesomeface.png" });
     Model* model2 = new Model({ "Textures/container.jpg", "Textures/awesomeface.png" });
 
@@ -54,9 +57,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
     glm::mat4 transform = glm::mat4(1.0f);
     transform = glm::translate(transform, glm::vec3(-0.8f, -0.8f, 0.0f));
-
-    //model2->setTransform(translate);
-    //model->setTransform(transform);
 
     Shader ourShader("Shaders/4.2.texture.vs", "Shaders/4.2.texture.fs");
 
@@ -120,7 +120,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
     hInst = hInstance; // Сохранить маркер экземпляра в глобальной переменной
 
     HWND hWnd = CreateWindowW(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW,
-        CW_USEDEFAULT, 0, CW_USEDEFAULT, 0, nullptr, nullptr, hInstance, nullptr);
+        CW_USEDEFAULT, 0, WINDOW_WIDTH, WINDOW_HEIGHT, nullptr, nullptr, hInstance, nullptr);
 
     if (!hWnd)
     {
@@ -182,6 +182,14 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         PAINTSTRUCT ps;
         HDC hdc = BeginPaint(hWnd, &ps);
         // TODO: Добавьте сюда любой код прорисовки, использующий HDC...
+        RECT rect;
+        GetWindowRect(hWnd, &rect);
+        std::cout << rect.bottom << std::endl;
+        std::cout << rect.right << std::endl;
+        std::cout << rect.left << std::endl;
+        std::cout << rect.top << std::endl;
+        glViewport(0, 0, rect.right - rect.left, rect.bottom - rect.top);
+
         EndPaint(hWnd, &ps);
     }
     break;
@@ -243,7 +251,7 @@ bool onWindowInit(HWND hWnd)
     {
         return false;
     }
-    glViewport(20, 20, 640, 640);
+    glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
     MessageBoxA(0, LPCSTR(glGetString(GL_VERSION)), "OPENGL VERSION", 0);
     return true;
 }
@@ -251,7 +259,7 @@ bool onWindowInit(HWND hWnd)
 void display(std::vector<Model*> models, Shader& shader)
 {
     glClearColor(0.3f, 1.f, 0.3f, 1);
-    glClear(GL_COLOR_BUFFER_BIT);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     for (auto& model : models)
         model->Draw(shader);
