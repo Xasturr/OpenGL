@@ -7,8 +7,10 @@
 #include "glm/glm/gtc/matrix_transform.hpp"
 #include "stb_image.h"
 
+
 #include "mesh.h"
 #include "shader.h"
+#include "Camera.h"
 
 #include <string>
 #include <fstream>
@@ -16,6 +18,9 @@
 #include <iostream>
 #include <map>
 #include <vector>
+#include <assimp/Importer.hpp>
+#include <assimp/scene.h>
+#include <assimp/postprocess.h>
 
 using namespace std;
 
@@ -38,9 +43,9 @@ public:
             delete mesh;
     }
 
-    void Draw(Shader& shader)
+    void Draw(Shader& shader, Camera& camera)
     {
-        mesh->Draw(shader);
+        mesh->Draw(shader, camera);
     }
 
     void setTransform(glm::mat4 transform)

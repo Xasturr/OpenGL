@@ -8,6 +8,7 @@
 #include "glm/glm/gtc/type_ptr.hpp"
 
 #include "shader.h"
+#include "Camera.h"
 
 #include <string>
 #include <vector>
@@ -17,6 +18,8 @@ using namespace std;
 
 const unsigned int WIDTH = 800;
 const unsigned int HEIGHT = 600;
+const unsigned int SCR_WIDTH = 600;
+const unsigned int SCR_HEIGHT = 400;
 
 struct Texture {
     unsigned int id;
@@ -34,7 +37,7 @@ public:
         setupMesh();
     }
 
-    void Draw(Shader& shader)
+    void Draw(Shader& shader, Camera& camera)
     {
         shader.use();
 
@@ -42,21 +45,24 @@ public:
         //std::tm* now = std::localtime(&t);
 
         glm::mat4 model = glm::mat4(1.0f); // сначала инициализируем единичную матрицу
-        glm::mat4 view = glm::mat4(1.0f);
-        glm::mat4 projection = glm::mat4(1.0f);
-        model = glm::rotate(model, (float)1 * glm::radians(50.0f), glm::vec3(0.5f, 1.0f, 0.0f));
-        view = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f));
-        projection = glm::perspective(glm::radians(45.0f), (float)WIDTH / (float)HEIGHT, 0.1f, 100.0f);
+        //glm::mat4 projection = glm::mat4(1.0f);
+        //model = glm::rotate(model, (float)1 * glm::radians(50.0f), glm::vec3(0.5f, 1.0f, 0.0f));
+        //view = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f));
+        //projection = glm::perspective(glm::radians(45.0f), (float)WIDTH / (float)HEIGHT, 0.1f, 100.0f);
 
         // Получаем местоположение uniform-матриц...
-        unsigned int modelLoc = glGetUniformLocation(shader.ID, "model");
-        unsigned int viewLoc = glGetUniformLocation(shader.ID, "view");
-        // ...передаем их в шейдеры(разными способами)
-        glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-        glUniformMatrix4fv(viewLoc, 1, GL_FALSE, &view[0][0]);
+        //unsigned int modelLoc = glGetUniformLocation(shader.ID, "model");
+        //unsigned int viewLoc = glGetUniformLocation(shader.ID, "view");
+        //glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
 
+        glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+        glm::mat4 view = camera.GetViewMatrix();
+
+        shader.setMat4("view", view);
+        //glUniformMatrix4fv(viewLoc, 1, GL_FALSE, &view[0][0]);
         // Примечание: В настоящее время мы устанавливаем матрицу проекции для каждого кадра, но поскольку матрица проекции редко меняется, то рекомендуется устанавливать её (единожды) вне основного цикла
         shader.setMat4("projection", projection);
+        shader.setMat4("model", model);
 
         unsigned int transformLoc = glGetUniformLocation(shader.ID, "transform");
         glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(transform));

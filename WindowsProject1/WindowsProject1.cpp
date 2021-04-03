@@ -4,12 +4,15 @@
 #include "framework.h"
 #include "WindowsProject1.h"
 #include "Model.h"
+#include "camera.h"
 
+#include "windowsx.h"
 #include <iostream>
 
 #define MAX_LOADSTRING 100
 #define WINDOW_WIDTH 900
 #define WINDOW_HEIGHT 600
+#define CAMERA_SPEED 0.01
 
 // Глобальные переменные:
 HINSTANCE hInst;                                // текущий экземпляр
@@ -17,6 +20,15 @@ WCHAR szTitle[MAX_LOADSTRING];                  // Текст строки за�
 WCHAR szWindowClass[MAX_LOADSTRING];            // имя класса главного окна
 HDC dc;                                         // device context
 HGLRC rc;                                       // rendering context 
+Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
+bool wPressed = false;
+bool aPressed = false;
+bool sPressed = false;
+bool dPressed = false;
+bool lBtnPressed = false;
+bool firstMouse = true;
+double lastXPos;
+double lastYPos;
 
 // Отправить объявления функций, включенных в этот модуль кода:
 ATOM                MyRegisterClass(HINSTANCE hInstance);
@@ -26,6 +38,7 @@ INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
 
 bool onWindowInit(HWND hWnd);
 void display(std::vector<Model*> models, Shader& shader);
+void updateCameraPos();
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     _In_opt_ HINSTANCE hPrevInstance,
@@ -62,7 +75,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
     std::vector<Model*> models = { model, model2 };
 
-    // Цикл основного сообщения:
     while (GetMessage(&msg, nullptr, 0, 0))
     {
         if (!TranslateAccelerator(msg.hwnd, hAccelTable, &msg))
@@ -70,6 +82,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
             TranslateMessage(&msg);
             DispatchMessage(&msg);
         }
+        
         display(models, ourShader);
     }
 
@@ -168,7 +181,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     {
         return onWindowInit(hWnd);
     }
-    break;
     case WM_DESTROY:
     {
         ReleaseDC(hWnd, dc);
@@ -176,7 +188,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         PostQuitMessage(0);
         return 0;
     } 
-    break;
     case WM_PAINT:
     {
         PAINTSTRUCT ps;
@@ -184,14 +195,119 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         // TODO: Добавьте сюда любой код прорисовки, использующий HDC...
         RECT rect;
         GetWindowRect(hWnd, &rect);
-        std::cout << rect.bottom << std::endl;
-        std::cout << rect.right << std::endl;
-        std::cout << rect.left << std::endl;
-        std::cout << rect.top << std::endl;
         glViewport(0, 0, rect.right - rect.left, rect.bottom - rect.top);
 
         EndPaint(hWnd, &ps);
     }
+    case WM_MOUSEMOVE:
+    {
+        const auto xPos = GET_X_LPARAM(lParam);
+        const auto yPos = GET_Y_LPARAM(lParam);
+
+        if ((xPos || yPos) && lBtnPressed)
+        {
+            if (firstMouse)
+            {
+                lastXPos = xPos;
+                lastYPos = yPos;
+                firstMouse = false;
+            }
+
+            auto xOffset = xPos - lastXPos;
+            auto yOffset = lastYPos - yPos;
+            lastXPos = xPos;
+            lastYPos = yPos;
+
+            camera.ProcessMouseMovement(xOffset, yOffset);
+        }
+
+        break;
+    }
+    case WM_TIMER:
+    {
+        updateCameraPos();
+        InvalidateRect(hWnd, NULL, FALSE);
+    }
+    case WM_LBUTTONDOWN:
+    {
+        const auto xPos = GET_X_LPARAM(lParam);
+        const auto yPos = GET_Y_LPARAM(lParam);
+
+        if (xPos || yPos)
+        {
+            lBtnPressed = true;
+        }
+        break;
+    }
+    case WM_LBUTTONUP:
+    {
+        lBtnPressed = false;
+        firstMouse = true;
+        break;
+    }
+    case WM_KEYDOWN:
+        switch (wParam)
+        {
+        case 0x57:
+        {
+            wPressed = true;
+            break;
+        }
+        case 0x41:
+        {
+            aPressed = true;
+            break;
+        }
+        case 0x53:
+        {
+            sPressed = true;
+            break;
+        }
+        case 0x44:
+        {
+            dPressed = true;
+            break;
+        }
+        }
+        break;
+
+    case WM_KEYUP:
+        switch (wParam)
+        {
+        case 0x57:
+        {
+            wPressed = false;
+            break;
+        }
+        case 0x41:
+        {
+            aPressed = false;
+            break;
+        }
+        case 0x53:
+        {
+            sPressed = false;
+            break;
+        }
+        case 0x44:
+        {
+            dPressed = false;
+            break;
+        }
+        }
+        break;
+
+    case WM_SYSKEYDOWN:
+        break;
+
+    case WM_SYSCHAR:
+        break;
+
+    case WM_SYSKEYUP:
+        break;
+
+    case WM_CHAR:
+        break;
     break;
     default:
         return DefWindowProc(hWnd, message, wParam, lParam);
@@ -253,7 +369,20 @@ bool onWindowInit(HWND hWnd)
     }
     glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
     MessageBoxA(0, LPCSTR(glGetString(GL_VERSION)), "OPENGL VERSION", 0);
+    SetTimer(hWnd, 1, 20, NULL);
     return true;
+}
+
+void updateCameraPos()
+{
+    if (wPressed)
+        camera.ProcessKeyboard(FORWARD, CAMERA_SPEED);
+    if (aPressed)
+        camera.ProcessKeyboard(LEFT, CAMERA_SPEED);
+    if (sPressed)
+        camera.ProcessKeyboard(BACKWARD, CAMERA_SPEED);
+    if (dPressed)
+        camera.ProcessKeyboard(RIGHT, CAMERA_SPEED);
 }
 
 void display(std::vector<Model*> models, Shader& shader)
@@ -262,10 +391,9 @@ void display(std::vector<Model*> models, Shader& shader)
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     for (auto& model : models)
-        model->Draw(shader);
+        model->Draw(shader, camera);
 
     glEnd();
     glFlush();
     SwapBuffers(dc);
-
 }
