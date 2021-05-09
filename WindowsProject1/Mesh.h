@@ -27,10 +27,26 @@ struct Texture {
     string path;
 };
 
+struct Vertex {
+    glm::vec3 Position;
+    glm::vec3 Normal;
+    glm::vec2 TexCoords;
+    // Касательный вектор
+    glm::vec3 Tangent;
+    // Вектор бинормали (вектор, перпендикулярный касательному вектору и вектору нормали)
+    glm::vec3 Bitangent;
+};
+
 class Mesh {
 public:
-    Mesh(vector<Texture> textures)
+    vector<Vertex> vertices;
+    vector<unsigned int> indices;
+    vector<Texture> textures;
+
+    Mesh(vector<Vertex> vertices, vector<unsigned int> indices, vector<Texture> textures)
     {
+        this->vertices = vertices;
+        this->indices = indices;
         this->textures = textures;
         this->transform = glm::mat4(1.0f);
 
@@ -39,49 +55,52 @@ public:
 
     void Draw(Shader& shader, Camera& camera)
     {
+        unsigned int diffuseNr = 1;
+        unsigned int specularNr = 1;
+        unsigned int normalNr = 1;
+        unsigned int heightNr = 1;
+
         shader.use();
 
-        //std::time_t t = std::time(0);   // get time now
-        //std::tm* now = std::localtime(&t);
-
         glm::mat4 model = glm::mat4(1.0f); // сначала инициализируем единичную матрицу
-        //glm::mat4 projection = glm::mat4(1.0f);
-        //model = glm::rotate(model, (float)1 * glm::radians(50.0f), glm::vec3(0.5f, 1.0f, 0.0f));
-        //view = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f));
-        //projection = glm::perspective(glm::radians(45.0f), (float)WIDTH / (float)HEIGHT, 0.1f, 100.0f);
-
-        // Получаем местоположение uniform-матриц...
-        //unsigned int modelLoc = glGetUniformLocation(shader.ID, "model");
-        //unsigned int viewLoc = glGetUniformLocation(shader.ID, "view");
-        //glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-
         glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
         glm::mat4 view = camera.GetViewMatrix();
 
         shader.setMat4("view", view);
-        //glUniformMatrix4fv(viewLoc, 1, GL_FALSE, &view[0][0]);
-        // Примечание: В настоящее время мы устанавливаем матрицу проекции для каждого кадра, но поскольку матрица проекции редко меняется, то рекомендуется устанавливать её (единожды) вне основного цикла
         shader.setMat4("projection", projection);
         shader.setMat4("model", model);
 
         unsigned int transformLoc = glGetUniformLocation(shader.ID, "transform");
         glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(transform));
 
-        for (unsigned int i = 0; i < textures.size(); ++i)
+        for (unsigned int i = 0; i < textures.size(); i++)
         {
             glActiveTexture(GL_TEXTURE0 + i);
-            glUniform1i(glGetUniformLocation(shader.ID, textures[i].type.c_str()), i);
+
+            // Получаем номер текстуры
+            string number;
+            string name = textures[i].type;
+            if (name == "texture_diffuse")
+                number = std::to_string(diffuseNr++);
+            else if (name == "texture_specular")
+                number = std::to_string(specularNr++);
+            else if (name == "texture_normal")
+                number = std::to_string(normalNr++);
+            else if (name == "texture_height")
+                number = std::to_string(heightNr++);
+
+            // Устанавливаем сэмплер на нужный текстурный юнит
+            glUniform1i(glGetUniformLocation(shader.ID, (name + number).c_str()), i);
             glBindTexture(GL_TEXTURE_2D, textures[i].id);
         }
 
         glBindVertexArray(VAO);
-        //glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
-        //glDrawElements(GL_QUADS, indices.size(), GL_UNSIGNED_INT, 0);
-        //glDrawArrays(GL_QUADS)
-        glDrawArrays(GL_TRIANGLES, 0, 36);
+        glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
         glBindVertexArray(0);
 
         glActiveTexture(GL_TEXTURE0);
+
+        ///////////////////////////////////////////////////
     }
 
     void setTransform(glm::mat4 transform)
@@ -91,53 +110,6 @@ public:
 
 private:
     unsigned int VBO, EBO, VAO;
-    vector<float> vertices = {
-         -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
-          0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
-          0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-          0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-         -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-         -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
-
-         -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-          0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-          0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-          0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-         -0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
-         -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-
-         -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-         -0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-         -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-         -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-         -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-         -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-
-          0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-          0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-          0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-          0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-          0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-          0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-
-         -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-          0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
-          0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-          0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-         -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-         -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-
-         -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-          0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-          0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-          0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-         -0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
-         -0.5f,  0.5f, -0.5f,  0.0f, 1.0f
-    };
-    vector<unsigned int> indices = {
-        0, 1, 2, 3
-    };
-    vector<Texture> textures;
     glm::mat4 transform;
 
     void setupMesh()
@@ -149,16 +121,31 @@ private:
         glBindVertexArray(VAO);
 
         glBindBuffer(GL_ARRAY_BUFFER, VBO);
-        glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), &vertices[0], GL_STATIC_DRAW);
+
+        glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(Vertex), &vertices[0], GL_STATIC_DRAW);
 
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), &indices[0], GL_STATIC_DRAW);
 
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+        // Координаты вершин
         glEnableVertexAttribArray(0);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)0);
 
-        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+        // Нормали вершин
         glEnableVertexAttribArray(1);
+        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, TexCoords));
+
+         //Текстурные координаты вершин
+        glEnableVertexAttribArray(2);
+        glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, Normal));
+
+        //// Касательный вектор вершины
+        //glEnableVertexAttribArray(3);
+        //glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, Tangent));
+
+        //// Вектор бинормали вершины
+        //glEnableVertexAttribArray(4);
+        //glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, Bitangent));
 
         glBindVertexArray(0);
     }

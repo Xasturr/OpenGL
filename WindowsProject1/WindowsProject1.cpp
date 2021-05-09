@@ -62,18 +62,11 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     HACCEL hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_WINDOWSPROJECT1));
     glEnable(GL_DEPTH_TEST);
     MSG msg;
-    Model* model = new Model({ "Textures/container.jpg", "Textures/awesomeface.png" });
-    Model* model2 = new Model({ "Textures/container.jpg", "Textures/awesomeface.png" });
-
-    glm::mat4 translate = glm::mat4(1.0f);
-    translate = glm::translate(translate, glm::vec3(0.8f, 0.8f, 0.0f));
-
-    glm::mat4 transform = glm::mat4(1.0f);
-    transform = glm::translate(transform, glm::vec3(-0.8f, -0.8f, 0.0f));
+    Model* model = new Model("D:/Skull.stl");
 
     Shader ourShader("Shaders/4.2.texture.vs", "Shaders/4.2.texture.fs");
 
-    std::vector<Model*> models = { model, model2 };
+    std::vector<Model*> models = { model };
 
     while (GetMessage(&msg, nullptr, 0, 0))
     {
@@ -192,7 +185,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     {
         PAINTSTRUCT ps;
         HDC hdc = BeginPaint(hWnd, &ps);
-        // TODO: Добавьте сюда любой код прорисовки, использующий HDC...
         RECT rect;
         GetWindowRect(hWnd, &rect);
         glViewport(0, 0, rect.right - rect.left, rect.bottom - rect.top);
