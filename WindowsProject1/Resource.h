@@ -1,8 +1,4 @@
-﻿//{{NO_DEPENDENCIES}}
-// Включаемый файл, созданный в Microsoft Visual C++.
-// Используется WindowsProject1.rc
-
-#define IDS_APP_TITLE			103
+﻿#define IDS_APP_TITLE			103
 
 #define IDR_MAINFRAME			128
 #define IDD_WINDOWSPROJECT1_DIALOG	102
@@ -16,7 +12,6 @@
 #ifndef IDC_STATIC
 #define IDC_STATIC				-1
 #endif
-// Следующие стандартные значения для новых объектов
 //
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS

@@ -31,9 +31,7 @@ struct Vertex {
     glm::vec3 Position;
     glm::vec3 Normal;
     glm::vec2 TexCoords;
-    // Касательный вектор
     glm::vec3 Tangent;
-    // Вектор бинормали (вектор, перпендикулярный касательному вектору и вектору нормали)
     glm::vec3 Bitangent;
 };
 
@@ -48,12 +46,12 @@ public:
         this->vertices = vertices;
         this->indices = indices;
         this->textures = textures;
-        this->transform = glm::mat4(1.0f);
+        this->position = glm::vec3(1.0f);
 
         setupMesh();
     }
 
-    void Draw(Shader& shader, Camera& camera)
+    void Draw(Shader& shader, Camera& camera, bool bbb)
     {
         unsigned int diffuseNr = 1;
         unsigned int specularNr = 1;
@@ -62,22 +60,23 @@ public:
 
         shader.use();
 
-        glm::mat4 model = glm::mat4(1.0f); // сначала инициализируем единичную матрицу
+        glm::mat4 model = glm::mat4(1.0f);
+        model = glm::translate(model, position);
         glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
         glm::mat4 view = camera.GetViewMatrix();
 
         shader.setMat4("view", view);
         shader.setMat4("projection", projection);
         shader.setMat4("model", model);
+        //shader.setMat4("transform", transform);
 
-        unsigned int transformLoc = glGetUniformLocation(shader.ID, "transform");
-        glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(transform));
+        //unsigned int transformLoc = glGetUniformLocation(shader.ID, "transform");
+        //glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(transform));
 
         for (unsigned int i = 0; i < textures.size(); i++)
         {
             glActiveTexture(GL_TEXTURE0 + i);
 
-            // Получаем номер текстуры
             string number;
             string name = textures[i].type;
             if (name == "texture_diffuse")
@@ -89,7 +88,6 @@ public:
             else if (name == "texture_height")
                 number = std::to_string(heightNr++);
 
-            // Устанавливаем сэмплер на нужный текстурный юнит
             glUniform1i(glGetUniformLocation(shader.ID, (name + number).c_str()), i);
             glBindTexture(GL_TEXTURE_2D, textures[i].id);
         }
@@ -99,18 +97,24 @@ public:
         glBindVertexArray(0);
 
         glActiveTexture(GL_TEXTURE0);
-
-        ///////////////////////////////////////////////////
     }
 
-    void setTransform(glm::mat4 transform)
+    void setPosition(glm::vec3 position)
     {
-        this->transform = transform;
+        this->position = position;
+    }
+
+    auto getVerticesPos()
+    {
+        vector<glm::vec3> vertices_pos;
+        for (const auto& v : vertices)
+            vertices_pos.push_back(v.Position);
+        return vertices_pos;
     }
 
 private:
     unsigned int VBO, EBO, VAO;
-    glm::mat4 transform;
+    glm::vec3 position;
 
     void setupMesh()
     {
@@ -127,23 +131,18 @@ private:
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), &indices[0], GL_STATIC_DRAW);
 
-        // Координаты вершин
         glEnableVertexAttribArray(0);
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)0);
 
-        // Нормали вершин
         glEnableVertexAttribArray(1);
         glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, TexCoords));
 
-         //Текстурные координаты вершин
         glEnableVertexAttribArray(2);
         glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, Normal));
 
-        //// Касательный вектор вершины
         //glEnableVertexAttribArray(3);
         //glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, Tangent));
 
-        //// Вектор бинормали вершины
         //glEnableVertexAttribArray(4);
         //glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, Bitangent));
 

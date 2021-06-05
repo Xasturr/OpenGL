@@ -19,8 +19,6 @@ const float SPEED = 6.0f;
 const float SENSITIVITY = 0.1f;
 const float ZOOM = 45.0f;
 
-
-// јбстрактный класс камеры, который обрабатывает входные данные и вычисл€ет соответствующие Ёйлеровы углы, векторы и матрицы дл€ использовани€ в OpenGL
 class Camera
 {
 public:

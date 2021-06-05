@@ -14,12 +14,11 @@
 #define WINDOW_HEIGHT 600
 #define CAMERA_SPEED 0.01
 
-// Глобальные переменные:
-HINSTANCE hInst;                                // текущий экземпляр
-WCHAR szTitle[MAX_LOADSTRING];                  // Текст строки заголовка
-WCHAR szWindowClass[MAX_LOADSTRING];            // имя класса главного окна
-HDC dc;                                         // device context
-HGLRC rc;                                       // rendering context 
+HINSTANCE hInst;
+WCHAR szTitle[MAX_LOADSTRING];     
+WCHAR szWindowClass[MAX_LOADSTRING];         
+HDC dc;                                     
+HGLRC rc;                                   
 Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
 bool wPressed = false;
 bool aPressed = false;
@@ -30,7 +29,6 @@ bool firstMouse = true;
 double lastXPos;
 double lastYPos;
 
-// Отправить объявления функций, включенных в этот модуль кода:
 ATOM                MyRegisterClass(HINSTANCE hInstance);
 BOOL                InitInstance(HINSTANCE, int);
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
@@ -39,6 +37,7 @@ INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
 bool onWindowInit(HWND hWnd);
 void display(std::vector<Model*> models, Shader& shader);
 void updateCameraPos();
+void setGlViewport(HWND hWnd);
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     _In_opt_ HINSTANCE hPrevInstance,
@@ -48,12 +47,10 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     UNREFERENCED_PARAMETER(hPrevInstance);
     UNREFERENCED_PARAMETER(lpCmdLine);
 
-    // Инициализация глобальных строк
     LoadStringW(hInstance, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);
     LoadStringW(hInstance, IDC_WINDOWSPROJECT1, szWindowClass, MAX_LOADSTRING);
     MyRegisterClass(hInstance);
 
-    // Выполнить инициализацию приложения:
     if (!InitInstance(hInstance, nCmdShow))
     {
         return FALSE;
@@ -62,11 +59,25 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     HACCEL hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_WINDOWSPROJECT1));
     glEnable(GL_DEPTH_TEST);
     MSG msg;
-    Model* model = new Model("D:/Skull.stl");
+    Model* model = new Model("D:/Study/Prog/WindowsProject1/WindowsProject1/resources/objects/backpack/backpack.obj");
+    Model* model1 = new Model("D:/Study/Prog/WindowsProject1/WindowsProject1/resources/objects/backpack/backpack.obj");
+    
+    model->getPosition();
 
+    //glm::mat4 myMatrix = glm::translate(glm::mat4(), glm::vec3(10.0f, 0.0f, 0.0f));
+    //glm::vec4 myVector(10.0f, 10.0f, 10.0f, 0.0f);
+    //glm::vec4 transformedVector = myMatrix * myVector;
+
+    glm::vec3 v = glm::vec3(8.0f, 0.0f, 0.0f);
+    model1->setPosition(v);
+
+    model1->getPosition();
+    //Model* model2 = new Model("D:/Study/Prog/WindowsProject1/WindowsProject1/resources/objects/backpack/backpack.obj");
+
+    //D:/Skull.stl
     Shader ourShader("Shaders/4.2.texture.vs", "Shaders/4.2.texture.fs");
 
-    std::vector<Model*> models = { model };
+    std::vector<Model*> models = { model, model1 };
 
     while (GetMessage(&msg, nullptr, 0, 0))
     {
@@ -85,11 +96,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     return (int)msg.wParam;
 }
 
-//
-//  ФУНКЦИЯ: MyRegisterClass()
-//
-//  ЦЕЛЬ: Регистрирует класс окна.
-//
 ATOM MyRegisterClass(HINSTANCE hInstance)
 {
     WNDCLASSEXW wcex;
@@ -104,26 +110,16 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
     wcex.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_WINDOWSPROJECT1));
     wcex.hCursor = LoadCursor(nullptr, IDC_ARROW);
     wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
-    wcex.lpszMenuName = MAKEINTRESOURCEW(IDC_WINDOWSPROJECT1);
+    wcex.lpszMenuName = nullptr;
     wcex.lpszClassName = szWindowClass;
     wcex.hIconSm = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_SMALL));
 
     return RegisterClassExW(&wcex);
 }
 
-//
-//   ФУНКЦИЯ: InitInstance(HINSTANCE, int)
-//
-//   ЦЕЛЬ: Сохраняет маркер экземпляра и создает главное окно
-//
-//   КОММЕНТАРИИ:
-//
-//        В этой функции маркер экземпляра сохраняется в глобальной переменной, а также
-//        создается и выводится главное окно программы.
-//
 BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 {
-    hInst = hInstance; // Сохранить маркер экземпляра в глобальной переменной
+    hInst = hInstance;
 
     HWND hWnd = CreateWindowW(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW,
         CW_USEDEFAULT, 0, WINDOW_WIDTH, WINDOW_HEIGHT, nullptr, nullptr, hInstance, nullptr);
@@ -139,16 +135,6 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
     return TRUE;
 }
 
-//
-//  ФУНКЦИЯ: WndProc(HWND, UINT, WPARAM, LPARAM)
-//
-//  ЦЕЛЬ: Обрабатывает сообщения в главном окне.
-//
-//  WM_COMMAND  - обработать меню приложения
-//  WM_PAINT    - Отрисовка главного окна
-//  WM_DESTROY  - отправить сообщение о выходе и вернуться
-//
-//
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     switch (message)
@@ -156,20 +142,13 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     case WM_COMMAND:
     {
         int wmId = LOWORD(wParam);
-        // Разобрать выбор в меню:
         switch (wmId)
         {
-        case IDM_ABOUT:
-            DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
-            break;
-        case IDM_EXIT:
-            DestroyWindow(hWnd);
-            break;
         default:
             return DefWindowProc(hWnd, message, wParam, lParam);
         }
     }
-    break;
+    //break;
     case WM_CREATE:
     {
         return onWindowInit(hWnd);
@@ -185,11 +164,15 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     {
         PAINTSTRUCT ps;
         HDC hdc = BeginPaint(hWnd, &ps);
-        RECT rect;
-        GetWindowRect(hWnd, &rect);
-        glViewport(0, 0, rect.right - rect.left, rect.bottom - rect.top);
-
+        setGlViewport(hWnd);
         EndPaint(hWnd, &ps);
+        break;
+    }
+    case WM_TIMER:
+    {
+        updateCameraPos();
+        InvalidateRect(hWnd, NULL, FALSE);
+        break;
     }
     case WM_MOUSEMOVE:
     {
@@ -215,11 +198,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
         break;
     }
-    case WM_TIMER:
-    {
-        updateCameraPos();
-        InvalidateRect(hWnd, NULL, FALSE);
-    }
     case WM_LBUTTONDOWN:
     {
         const auto xPos = GET_X_LPARAM(lParam);
@@ -238,57 +216,59 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         break;
     }
     case WM_KEYDOWN:
+    {
         switch (wParam)
         {
-        case 0x57:
-        {
-            wPressed = true;
-            break;
-        }
-        case 0x41:
-        {
-            aPressed = true;
-            break;
-        }
-        case 0x53:
-        {
-            sPressed = true;
-            break;
-        }
-        case 0x44:
-        {
-            dPressed = true;
-            break;
-        }
+            case 0x57:
+            {
+                wPressed = true;
+                break;
+            }
+            case 0x41:
+            {
+                aPressed = true;
+                break;
+            }
+            case 0x53:
+            {
+                sPressed = true;
+                break;
+            }
+            case 0x44:
+            {
+                dPressed = true;
+                break;
+            }
         }
         break;
-
+    }
     case WM_KEYUP:
+    {
         switch (wParam)
         {
-        case 0x57:
-        {
-            wPressed = false;
-            break;
-        }
-        case 0x41:
-        {
-            aPressed = false;
-            break;
-        }
-        case 0x53:
-        {
-            sPressed = false;
-            break;
-        }
-        case 0x44:
-        {
-            dPressed = false;
-            break;
-        }
+            case 0x57:
+            {
+                wPressed = false;
+                break;
+            }
+            case 0x41:
+            {
+                aPressed = false;
+                break;
+            }
+            case 0x53:
+            {
+                sPressed = false;
+                break;
+            }
+            case 0x44:
+            {
+                dPressed = false;
+                break;
+            }
         }
         break;
-
+    }
     case WM_SYSKEYDOWN:
         break;
 
@@ -305,26 +285,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         return DefWindowProc(hWnd, message, wParam, lParam);
     }
     return 0;
-}
-
-// Обработчик сообщений для окна "О программе".
-INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
-{
-    UNREFERENCED_PARAMETER(lParam);
-    switch (message)
-    {
-    case WM_INITDIALOG:
-        return (INT_PTR)TRUE;
-
-    case WM_COMMAND:
-        if (LOWORD(wParam) == IDOK || LOWORD(wParam) == IDCANCEL)
-        {
-            EndDialog(hDlg, LOWORD(wParam));
-            return (INT_PTR)TRUE;
-        }
-        break;
-    }
-    return (INT_PTR)FALSE;
 }
 
 bool onWindowInit(HWND hWnd)
@@ -359,8 +319,7 @@ bool onWindowInit(HWND hWnd)
     {
         return false;
     }
-    glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
-    MessageBoxA(0, LPCSTR(glGetString(GL_VERSION)), "OPENGL VERSION", 0);
+    setGlViewport(hWnd);
     SetTimer(hWnd, 1, 20, NULL);
     return true;
 }
@@ -388,4 +347,22 @@ void display(std::vector<Model*> models, Shader& shader)
     glEnd();
     glFlush();
     SwapBuffers(dc);
+}
+
+void setGlViewport(HWND hWnd)
+{
+    RECT rect;
+    GetWindowRect(hWnd, &rect);
+    auto horSize = rect.right - rect.left;
+    auto verSize = rect.bottom - rect.top;
+    if (horSize >= verSize)
+    {
+        auto offset = (horSize - verSize) / 2;
+        glViewport(offset, 0, verSize, verSize);
+    }
+    else
+    {
+        auto offset = (verSize - horSize) / 2;
+        glViewport(0, offset, horSize, horSize);
+    }
 }

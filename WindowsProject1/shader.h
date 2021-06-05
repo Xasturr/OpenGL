@@ -13,34 +13,27 @@ class Shader
 {
 public:
     unsigned int ID;
-    // Конструктор генерирует шейдер "на лету"
     Shader(const char* vertexPath, const char* fragmentPath)
     {
-        // 1. Получение исходного кода вершинного/фрагментного шейдера из переменной filePath
         std::string vertexCode;
         std::string fragmentCode;
         std::ifstream vShaderFile;
         std::ifstream fShaderFile;
 
-        // Убеждаемся, что объекты ifstream могут выбросить исключение:
         vShaderFile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
         fShaderFile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
         try
         {
-            // Открываем файлы
             vShaderFile.open(vertexPath);
             fShaderFile.open(fragmentPath);
             std::stringstream vShaderStream, fShaderStream;
 
-            // Читаем содержимое файловых буферов
             vShaderStream << vShaderFile.rdbuf();
             fShaderStream << fShaderFile.rdbuf();
 
-            // Закрываем файлы
             vShaderFile.close();
             fShaderFile.close();
 
-            // Конвертируем в строковую переменную данные из потока
             vertexCode = vShaderStream.str();
             fragmentCode = fShaderStream.str();
         }
@@ -51,29 +44,24 @@ public:
         const char* vShaderCode = vertexCode.c_str();
         const char* fShaderCode = fragmentCode.c_str();
 
-        // 2. Компилируем шейдеры
         unsigned int vertex, fragment;
 
-        // Вершинный шейдер 
         vertex = glCreateShader(GL_VERTEX_SHADER);
         glShaderSource(vertex, 1, &vShaderCode, NULL);
         glCompileShader(vertex);
         checkCompileErrors(vertex, "VERTEX");
 
-        // Фрагментный шейдер
         fragment = glCreateShader(GL_FRAGMENT_SHADER);
         glShaderSource(fragment, 1, &fShaderCode, NULL);
         glCompileShader(fragment);
         checkCompileErrors(fragment, "FRAGMENT");
 
-        // Шейдерная программа
         ID = glCreateProgram();
         glAttachShader(ID, vertex);
         glAttachShader(ID, fragment);
         glLinkProgram(ID);
         checkCompileErrors(ID, "PROGRAM");
 
-        // После того, как мы связали шейдеры с нашей программой, удаляем их, т.к. они больше не нужны
         glDeleteShader(vertex);
         glDeleteShader(fragment);
     }

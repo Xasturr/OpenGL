@@ -33,6 +33,7 @@ public:
     vector<Mesh> meshes;
     string directory;
     bool gammaCorrection;
+    bool bb = true;
 
     Model(string const& path, bool gamma = false)
     {
@@ -46,19 +47,30 @@ public:
     void Draw(Shader& shader, Camera& camera)
     {
         for (int i = 0; i < meshes.size(); i++)
-            meshes[i].Draw(shader, camera);
+            meshes[i].Draw(shader, camera, bb);
+
+        bb = !bb;
     }
 
-    void setTransform(glm::mat4 transform)
+    void setPosition(glm::vec3 position)
     {
         for (int i = 0; i < meshes.size(); i++)
-            meshes[i].setTransform(transform);
+            meshes[i].setPosition(position);
+    }
+
+    void getPosition()
+    {
+        vector<glm::vec3> pos;
+        for (int i = 0; i < meshes.size(); i++)
+        {
+            auto pos = meshes[i].getVerticesPos();
+        }
+        int a = 1;
     }
 
 private:
     void loadModel(string const& path)
     {
-        // Чтение файла с помощью Assimp
         Assimp::Importer importer;
         const aiScene* scene = importer.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_CalcTangentSpace);
 
@@ -76,12 +88,9 @@ private:
     {
         for (unsigned int i = 0; i < node->mNumMeshes; i++)
         {
-            // Узел содержит только индексы объектов в сцене.
-            // Сцена же содержит все данные; узел - это лишь способ организации данных
             aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
             meshes.push_back(processMesh(mesh, scene));
         }
-        // После того, как мы обработали все меши, мы начинаем рекурсивно обрабатывать каждый из дочерних узлов
         for (unsigned int i = 0; i < node->mNumChildren; i++)
         {
             processNode(node->mChildren[i], scene);
@@ -113,8 +122,6 @@ private:
             {
                 glm::vec2 vec;
 
-                // Вершина может содержать до 8 различных текстурных координат. Мы предполагаем, что мы не будем использовать модели,
-                // в которых вершина может содержать несколько текстурных координат, поэтому мы всегда берем первый набор (0)
                 vec.x = mesh->mTextureCoords[0][i].x;
                 vec.y = mesh->mTextureCoords[0][i].y;
                 vertex.TexCoords = vec;
@@ -122,18 +129,8 @@ private:
             else
                 vertex.TexCoords = glm::vec2(0.0f, 0.0f);
 
-            //vector.x = mesh->mTangents[i].x;
-            //vector.y = mesh->mTangents[i].y;
-            //vector.z = mesh->mTangents[i].z;
-            //vertex.Tangent = vector;
-
-            //vector.x = mesh->mBitangents[i].x;
-            //vector.y = mesh->mBitangents[i].y;
-            //vector.z = mesh->mBitangents[i].z;
-            //vertex.Bitangent = vector;
             vertices.push_back(vertex);
         }
-        // Проходимся по каждой грани меша
         for (unsigned int i = 0; i < mesh->mNumFaces; i++)
         {
             aiFace face = mesh->mFaces[i];
@@ -144,19 +141,15 @@ private:
 
         aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
 
-        // 1. Диффузные карты
         vector<Texture> diffuseMaps = loadMaterialTextures(material, aiTextureType_DIFFUSE, "texture_diffuse");
         textures.insert(textures.end(), diffuseMaps.begin(), diffuseMaps.end());
 
-        // 2. Карты отражения
         vector<Texture> specularMaps = loadMaterialTextures(material, aiTextureType_SPECULAR, "texture_specular");
         textures.insert(textures.end(), specularMaps.begin(), specularMaps.end());
 
-        // 3. Карты нормалей
         std::vector<Texture> normalMaps = loadMaterialTextures(material, aiTextureType_HEIGHT, "texture_normal");
         textures.insert(textures.end(), normalMaps.begin(), normalMaps.end());
 
-        // 4. Карты высот
         std::vector<Texture> heightMaps = loadMaterialTextures(material, aiTextureType_AMBIENT, "texture_height");
         textures.insert(textures.end(), heightMaps.begin(), heightMaps.end());
 
